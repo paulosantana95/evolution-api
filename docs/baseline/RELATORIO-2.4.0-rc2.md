@@ -17,7 +17,8 @@ Resultados de qualidade já medidos nesta VM (ver `docs/baseline/quality-results
 | Suíte `test/all.test.ts` pré-existente | **não existia** (pasta `test/` vazia e no `.gitignore` da rc2) |
 | `npm run db:generate` + `db:deploy` | **passou** (Postgres 16, inclusive `RuntimeConfig`) |
 | Imagem Docker do repo | **não buildada** — Docker não está instalado nesta VM |
-| HTTP smoke (503 + isolamento) | ver `docs/baseline/http-smoke-*.json` após `run-baseline.sh` |
+| HTTP smoke **sem** licença | **6/6** — `/license/status` = `inactive`; `POST /instance/create` e `POST /message/sendText` = **503 LICENSE_REQUIRED**. `AUTHENTICATION_API_KEY` foi recusada pelo servidor real (`invalid api key format — use the 64-char hex key`, HTTP 401). `/` continua 200 (está na allowlist). |
+| HTTP smoke **com** seed local | **14/14** — `/license/status` = `active` (chave mascarada). Duas instâncias criadas. **#2435 reproduzido:** token de A em `GET /instance/connectionState/A?instanceName=B` devolveu B. Path B com token A = 401. `sendText` sem WhatsApp = 500 (`Cannot read properties of undefined (reading 'onWhatsApp')`). Payload aninhado `{textMessage:{text}}` = 400. |
 
 ## Passo 0 — git
 
@@ -58,7 +59,7 @@ Ver `docs/baseline/license-flow.md`. Resumo: sem `RuntimeConfig.api_key` a API d
 
 ### a. Isolamento entre instâncias (#2435 / PR #2549)
 
-**Reproduzido em código e (quando o HTTP smoke ativo roda) via API.**
+**Reproduzido em código e via HTTP nesta VM.**
 
 - `auth.guard` autentica só `req.params.instanceName`.
 - `dataValidate` faz `Object.assign(instance, request.query)` **depois**.
@@ -113,7 +114,7 @@ Hipótese: a mensagem é relayada e o Web desenha o cartão; Android/iOS ignoram
 | #2597 PENDING eterno | Não (precisa WA). Código: `prepareMessage` grava `status[message.status]` e não promove outbound. | Status fica PENDING se o ack não chegar; pode acoplar a 515/logout (#2509) ou `@lid`. |
 | #2647 MESSAGES_UPSERT some | Parcial, por leitura. | `return` cedo no bloco S3/vídeo **antes** de `sendDataWebhook`; filtro `type !== notify\|append`; processor RxJS `EMPTY` após 3 retries. Intermitência longa exige número real. |
 | #2658 desconexões rc2 | Não (precisa WA). | Close handler trata `DisconnectReason.loggedOut` como terminal. #2509 (pós-rc2) descreve 401 fantasma após 515. Candidato a cherry-pick. |
-| #2583 sendText 500 `textMessage` | Schema reproduzido: `{text}` é válido; `{textMessage:{text}}` é 400. O 500 `undefined.textMessage` **não** aparece no TS da Evolution — hipótese: estado do socket / proto interno do Baileys após o pairing, não o DTO. | Precisa de instância `open`. |
+| #2583 sendText 500 `textMessage` | Schema: `{text}` válido; `{textMessage:{text}}` = **400** no HTTP. Sem socket, `{text}` já estoura **500** `undefined.onWhatsApp` (cliente Baileys ausente). O `undefined.textMessage` do issue **não** foi visto — hipótese: mesma classe de crash (propriedade de um objeto undefined) depois que o socket cai, não o DTO. | Precisa de instância `open` para o texto exato do issue. |
 | #2713 perda de contextInfo | **Reproduzido em unitário.** | `prepareMessage` copia `message.messageContextInfo` (secret/thread) e **apaga** `extendedTextMessage` (onde está o quote). |
 | #2762 link preview | Parcial. | `linkPreview` default ligado; falha de `generateLinkPreview` retorna `undefined` e o send segue com contexto parcial — relato diz que a mensagem nem chega. Precisa WA. |
 | #2618 Passkey | Não. | Zero menção a passkey/webauthn no channel Baileys. Só reproduz em conta que obriga Passkey. |

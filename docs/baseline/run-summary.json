@@ -1,0 +1,18 @@
+{
+  "started": "2026-10-26T17:48:00Z",
+  "finished": "2026-10-26T17:58:20Z",
+  "commit": "85e10648",
+  "branch": "test/baseline-2.4.0-rc2",
+  "base": "5624bdaea81c58e4db60fe2a3a8de7c48bba1e60",
+  "steps": [
+    { "name": "lint-check", "exit": 0 },
+    { "name": "typecheck", "exit": 0 },
+    { "name": "build", "exit": 0 },
+    { "name": "unit-tests", "exit": 0, "detail": "39/39" },
+    { "name": "db-deploy", "exit": 0 },
+    { "name": "http-smoke-inactive", "exit": 0, "detail": "6/6 — LICENSE_REQUIRED 503 on /instance/create and /message/sendText" },
+    { "name": "http-smoke-active", "exit": 0, "detail": "14/14 — #2435 bypass reproduced; sendText without WA = 500 onWhatsApp" }
+  ],
+  "dockerImage": "not built — Docker not installed",
+  "whatsapp": "not connected"
+}
