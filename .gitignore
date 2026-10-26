@@ -34,10 +34,14 @@ lerna-debug.log*
 # Project related
 /instances/*
 !/instances/.gitkeep
-/test/
+# Baseline tests for 2.4.0-rc2 are tracked (the historical /test/ ignore hid the missing suite).
+# /test/
 /src/env.yml
 /store
 *.env
+# Baseline runner noise (JSON summaries are tracked)
+docs/baseline/*.log
+docs/baseline/api-*.log
 
 /temp/*
 
