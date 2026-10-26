@@ -1,0 +1,18 @@
+{
+  "commit": "5624bdaea81c58e4db60fe2a3a8de7c48bba1e60",
+  "recordedAt": "2026-10-26T17:56:00Z",
+  "node": "v22.23.4",
+  "npm": "10.9.9",
+  "baileysDeclared": "7.0.0-rc.9",
+  "baileysInstalled": "7.0.0-rc.9",
+  "docker": "not installed — image not built",
+  "postgres": "16.15 local, migrations applied including 20260506184850_add_runtime_config",
+  "redis": "7.0.15 PONG",
+  "steps": {
+    "lint:check": { "exit": 0, "note": "eslint --ext .ts src — clean" },
+    "tsc --noEmit": { "exit": 0, "note": "TypeScript 5.7, skipLibCheck" },
+    "npm run build": { "exit": 0, "note": "tsc --noEmit && tsup, ESM ⚡️ Build success in 5768ms" },
+    "npm run test:baseline": { "exit": 0, "note": "39/39 pass" },
+    "existing test suite": { "exit": null, "note": "test/ did not exist on rc2 (gitignored, empty). package.json points at test/all.test.ts which was missing." }
+  }
+}
