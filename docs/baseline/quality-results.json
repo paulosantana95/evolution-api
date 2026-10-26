@@ -13,6 +13,8 @@
     "tsc --noEmit": { "exit": 0, "note": "TypeScript 5.7, skipLibCheck" },
     "npm run build": { "exit": 0, "note": "tsc --noEmit && tsup, ESM ⚡️ Build success in 5768ms" },
     "npm run test:baseline": { "exit": 0, "note": "39/39 pass" },
-    "existing test suite": { "exit": null, "note": "test/ did not exist on rc2 (gitignored, empty). package.json points at test/all.test.ts which was missing." }
+    "existing test suite": { "exit": null, "note": "test/ did not exist on rc2 (gitignored, empty). package.json points at test/all.test.ts which was missing." },
+    "http-smoke-inactive": { "exit": 0, "note": "6/6 LICENSE_REQUIRED" },
+    "http-smoke-active": { "exit": 0, "note": "14/14 including #2435 bypass" }
   }
 }

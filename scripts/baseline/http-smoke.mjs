@@ -64,8 +64,8 @@ const licenseStatus = await call('GET /license/status (public)', 'GET', '/licens
 
 const licenseActive = licenseStatus.json?.status === 'active';
 
-await call('GET / (root)', 'GET', '/', {
-  expect: (r) => (licenseActive ? r.status === 200 && r.json?.version : is503License(r)),
+await call('GET / (root is on the license allowlist)', 'GET', '/', {
+  expect: (r) => r.status === 200 && !!r.json?.version,
 });
 
 await call('GET /health if present', 'GET', '/health', {

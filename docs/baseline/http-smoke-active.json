@@ -1,0 +1,303 @@
+{
+  "base": "http://127.0.0.1:8080",
+  "licenseActive": true,
+  "licenseStatus": {
+    "status": "active",
+    "instance_id": "50114811-0c48-4808-b23a-32623a33383a",
+    "api_key": "baseline...-key"
+  },
+  "at": "2026-10-26T17:58:16.709Z",
+  "results": [
+    {
+      "name": "GET /license/status (public)",
+      "method": "GET",
+      "path": "/license/status",
+      "status": 200,
+      "ms": 32,
+      "json": {
+        "status": "active",
+        "instance_id": "50114811-0c48-4808-b23a-32623a33383a",
+        "api_key": "baseline...-key"
+      },
+      "text": "{\"status\":\"active\",\"instance_id\":\"50114811-0c48-4808-b23a-32623a33383a\",\"api_key\":\"baseline...-key\"}",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "GET / (root is on the license allowlist)",
+      "method": "GET",
+      "path": "/",
+      "status": 200,
+      "ms": 5,
+      "json": {
+        "status": 200,
+        "message": "Welcome to the Evolution API, it is working!",
+        "version": "2.4.0",
+        "clientName": "evolution_exchange",
+        "manager": "http://127.0.0.1:8080/manager",
+        "documentation": "https://doc.evolution-api.com",
+        "whatsappWebVersion": "2.3000.1051718708"
+      },
+      "text": "{\"status\":200,\"message\":\"Welcome to the Evolution API, it is working!\",\"version\":\"2.4.0\",\"clientName\":\"evolution_exchange\",\"manager\":\"http://127.0.0.1:8080/manager\",\"documentation\":\"https://doc.evolution-api.com\",\"whatsappWebVersion\":\"2.3000.1051718708\"}",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "GET /health if present",
+      "method": "GET",
+      "path": "/health",
+      "status": 404,
+      "ms": 3,
+      "json": {
+        "status": 404,
+        "error": "Not Found",
+        "response": {
+          "message": [
+            "Cannot GET /health"
+          ]
+        }
+      },
+      "text": "{\"status\":404,\"error\":\"Not Found\",\"response\":{\"message\":[\"Cannot GET /health\"]}}",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "POST /instance/create without apikey",
+      "method": "POST",
+      "path": "/instance/create",
+      "status": 401,
+      "ms": 10,
+      "json": {
+        "status": 401,
+        "error": "Unauthorized",
+        "response": {
+          "message": "Unauthorized"
+        }
+      },
+      "text": "{\"status\":401,\"error\":\"Unauthorized\",\"response\":{\"message\":\"Unauthorized\"}}",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "create instance A",
+      "method": "POST",
+      "path": "/instance/create",
+      "status": 201,
+      "ms": 16,
+      "json": {
+        "instance": {
+          "instanceName": "baseline-a-1793037496637",
+          "instanceId": "a9a8fde2-6a6b-4f84-a1f3-900c4c1b3e48",
+          "integration": "WHATSAPP-BAILEYS",
+          "webhookWaBusiness": null,
+          "accessTokenWaBusiness": "",
+          "status": "close"
+        },
+        "hash": "BASELINE-TOKEN-A",
+        "webhook": {},
+        "websocket": {},
+        "rabbitmq": {},
+        "nats": {},
+        "sqs": {},
+        "settings": {
+          "rejectCall": false,
+          "msgCall": "",
+          "groupsIgnore": false,
+          "alwaysOnline": false,
+          "readMessages": false,
+          "readStatus": false,
+          "syncFullHistory": false,
+          "wavoipToken": ""
+        }
+      },
+      "text": "{\"instance\":{\"instanceName\":\"baseline-a-1793037496637\",\"instanceId\":\"a9a8fde2-6a6b-4f84-a1f3-900c4c1b3e48\",\"integration\":\"WHATSAPP-BAILEYS\",\"webhookWaBusiness\":null,\"accessTokenWaBusiness\":\"\",\"status\":\"close\"},\"hash\":\"BASELINE-TOKEN-A\",\"webhook\":{},\"websocket\":{},\"rabbitmq\":{},\"nats\":{},\"sqs\":{},\"settings\":{\"rejectCall\":false,\"msgCall\":\"\",\"groupsIgnore\":false,\"alwaysOnline\":false,\"readMessages\":false,\"readStatus\":false,\"syncFullHistory\":false,\"wavoipToken\":\"\"}}",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "create instance B",
+      "method": "POST",
+      "path": "/instance/create",
+      "status": 201,
+      "ms": 7,
+      "json": {
+        "instance": {
+          "instanceName": "baseline-b-1793037496637",
+          "instanceId": "df46ea3f-476f-4c72-913f-c158eadd21cd",
+          "integration": "WHATSAPP-BAILEYS",
+          "webhookWaBusiness": null,
+          "accessTokenWaBusiness": "",
+          "status": "close"
+        },
+        "hash": "BASELINE-TOKEN-B",
+        "webhook": {},
+        "websocket": {},
+        "rabbitmq": {},
+        "nats": {},
+        "sqs": {},
+        "settings": {
+          "rejectCall": false,
+          "msgCall": "",
+          "groupsIgnore": false,
+          "alwaysOnline": false,
+          "readMessages": false,
+          "readStatus": false,
+          "syncFullHistory": false,
+          "wavoipToken": ""
+        }
+      },
+      "text": "{\"instance\":{\"instanceName\":\"baseline-b-1793037496637\",\"instanceId\":\"df46ea3f-476f-4c72-913f-c158eadd21cd\",\"integration\":\"WHATSAPP-BAILEYS\",\"webhookWaBusiness\":null,\"accessTokenWaBusiness\":\"\",\"status\":\"close\"},\"hash\":\"BASELINE-TOKEN-B\",\"webhook\":{},\"websocket\":{},\"rabbitmq\":{},\"nats\":{},\"sqs\":{},\"settings\":{\"rejectCall\":false,\"msgCall\":\"\",\"groupsIgnore\":false,\"alwaysOnline\":false,\"readMessages\":false,\"readStatus\":false,\"syncFullHistory\":false,\"wavoipToken\":\"\"}}",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "connectionState A with token A",
+      "method": "GET",
+      "path": "/instance/connectionState/baseline-a-1793037496637",
+      "status": 200,
+      "ms": 4,
+      "json": {
+        "instance": {
+          "instanceName": "baseline-a-1793037496637",
+          "state": "close"
+        }
+      },
+      "text": "{\"instance\":{\"instanceName\":\"baseline-a-1793037496637\",\"state\":\"close\"}}",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "ISOLATION BYPASS: connectionState A?instanceName=B with token A",
+      "method": "GET",
+      "path": "/instance/connectionState/baseline-a-1793037496637?instanceName=baseline-b-1793037496637",
+      "status": 200,
+      "ms": 3,
+      "json": {
+        "instance": {
+          "instanceName": "baseline-b-1793037496637",
+          "state": "close"
+        }
+      },
+      "text": "{\"instance\":{\"instanceName\":\"baseline-b-1793037496637\",\"state\":\"close\"}}",
+      "error": null,
+      "pass": true,
+      "reproducedCrossInstanceBypass": true,
+      "notes": "REPRODUCED #2435: token A operated instance B via query override"
+    },
+    {
+      "name": "token A cannot use path B (auth should 401)",
+      "method": "GET",
+      "path": "/instance/connectionState/baseline-b-1793037496637",
+      "status": 401,
+      "ms": 3,
+      "json": {
+        "status": 401,
+        "error": "Unauthorized",
+        "response": {
+          "message": "Unauthorized"
+        }
+      },
+      "text": "{\"status\":401,\"error\":\"Unauthorized\",\"response\":{\"message\":\"Unauthorized\"}}",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "sendText without WhatsApp (no QR)",
+      "method": "POST",
+      "path": "/message/sendText/baseline-a-1793037496637",
+      "status": 500,
+      "ms": 10,
+      "json": {
+        "status": 500,
+        "error": "Internal Server Error",
+        "response": {
+          "message": "Cannot read properties of undefined (reading 'onWhatsApp')"
+        }
+      },
+      "text": "{\"status\":500,\"error\":\"Internal Server Error\",\"response\":{\"message\":\"Cannot read properties of undefined (reading 'onWhatsApp')\"}}",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "sendText nested textMessage shape",
+      "method": "POST",
+      "path": "/message/sendText/baseline-a-1793037496637",
+      "status": 400,
+      "ms": 3,
+      "json": {
+        "status": 400,
+        "error": "Bad Request",
+        "response": {
+          "message": [
+            [
+              "instance requires property \"text\""
+            ]
+          ]
+        }
+      },
+      "text": "{\"status\":400,\"error\":\"Bad Request\",\"response\":{\"message\":[[\"instance requires property \\\"text\\\"\"]]}}",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "sendButtons PIX without WhatsApp",
+      "method": "POST",
+      "path": "/message/sendButtons/baseline-a-1793037496637",
+      "status": 500,
+      "ms": 6,
+      "json": {
+        "status": 500,
+        "error": "Internal Server Error",
+        "response": {
+          "message": "Cannot read properties of undefined (reading 'onWhatsApp')"
+        }
+      },
+      "text": "{\"status\":500,\"error\":\"Internal Server Error\",\"response\":{\"message\":\"Cannot read properties of undefined (reading 'onWhatsApp')\"}}",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "getCatalog without WhatsApp",
+      "method": "POST",
+      "path": "/business/getCatalog/baseline-a-1793037496637",
+      "status": 400,
+      "ms": 11,
+      "json": {
+        "status": 400,
+        "error": "Bad Request",
+        "message": "Cannot read properties of undefined (reading 'onWhatsApp')",
+        "details": {
+          "whatsapp_error": "Cannot read properties of undefined (reading 'onWhatsApp')",
+          "whatsapp_code": "UNKNOWN_ERROR",
+          "error_user_title": "Cannot read properties of undefined (reading 'onWhatsApp')",
+          "error_user_msg": "Cannot read properties of undefined (reading 'onWhatsApp')",
+          "error_type": "UNKNOWN",
+          "error_subcode": null,
+          "fbtrace_id": null,
+          "context": "business_catalog",
+          "type": "whatsapp_api_error"
+        },
+        "timestamp": "2026-10-26T17:58:16.701Z"
+      },
+      "text": "{\"status\":400,\"error\":\"Bad Request\",\"message\":\"Cannot read properties of undefined (reading 'onWhatsApp')\",\"details\":{\"whatsapp_error\":\"Cannot read properties of undefined (reading 'onWhatsApp')\",\"whatsapp_code\":\"UNKNOWN_ERROR\",\"error_user_title\":\"Cannot read properties of undefined (reading 'onWhatsApp')\",\"error_user_msg\":\"Cannot read properties of undefined (reading 'onWhatsApp')\",\"error_type\":\"UNKNOWN\",\"error_subcode\":null,\"fbtrace_id\":null,\"context\":\"business_catalog\",\"type\":\"whatsapp_api_er",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "register is public and already-active",
+      "method": "GET",
+      "path": "/license/register",
+      "status": 200,
+      "ms": 6,
+      "json": {
+        "status": "active",
+        "message": "License is already active"
+      },
+      "text": "{\"status\":\"active\",\"message\":\"License is already active\"}",
+      "error": null,
+      "pass": true
+    }
+  ],
+  "passed": 14,
+  "failed": 0
+}
