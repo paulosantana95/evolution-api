@@ -1,0 +1,36 @@
+# Local stack used to reproduce the 2.4.0-rc2 baseline.
+# This file is documentation + optional runner — it does not change the
+# production docker-compose.yaml. Docker was not available in the investigation
+# VM; Postgres 16 + Redis 7 were installed on the host instead.
+#
+#   docker compose -f docker-compose.baseline.yml up -d postgres redis
+#   export DATABASE_PROVIDER=postgresql
+#   export DATABASE_CONNECTION_URI='postgresql://evolution:evolution@127.0.0.1:5432/evolution_db?schema=evolution_api'
+#   npm run db:generate && npm run db:deploy
+#   node scripts/baseline/seed-local-license.mjs
+#   npm start
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: evolution_db
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: evolution
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U evolution -d evolution_db']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
