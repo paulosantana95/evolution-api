@@ -3,11 +3,13 @@ import {
   SendAudioDto,
   SendButtonsDto,
   SendCarouselDto,
+  SendCatalogDto,
   SendContactDto,
   SendListDto,
   SendLocationDto,
   SendMediaDto,
   SendPollDto,
+  SendProductDto,
   SendPtvDto,
   SendReactionDto,
   SendStatusDto,
@@ -20,11 +22,13 @@ import {
   audioMessageSchema,
   buttonsMessageSchema,
   carouselMessageSchema,
+  catalogMessageSchema,
   contactMessageSchema,
   listMessageSchema,
   locationMessageSchema,
   mediaMessageSchema,
   pollMessageSchema,
+  productMessageSchema,
   ptvMessageSchema,
   reactionMessageSchema,
   statusMessageSchema,
@@ -190,6 +194,36 @@ export class MessageRouter extends RouterBroker {
           schema: carouselMessageSchema,
           ClassRef: SendCarouselDto,
           execute: (instance, data) => sendMessageController.sendCarousel(instance, data),
+        });
+
+        return res.status(HttpStatus.CREATED).json(response);
+      })
+      .post(this.routerPath('sendProduct'), ...guards, async (req, res) => {
+        const response = await this.dataValidate<SendProductDto>({
+          request: req,
+          schema: productMessageSchema,
+          ClassRef: SendProductDto,
+          execute: (instance, data) => sendMessageController.sendProduct(instance, data),
+        });
+
+        return res.status(HttpStatus.CREATED).json(response);
+      })
+      .post(this.routerPath('sendCatalog'), ...guards, async (req, res) => {
+        const response = await this.dataValidate<SendCatalogDto>({
+          request: req,
+          schema: catalogMessageSchema,
+          ClassRef: SendCatalogDto,
+          execute: (instance, data) => sendMessageController.sendCatalog(instance, data),
+        });
+
+        return res.status(HttpStatus.CREATED).json(response);
+      })
+      .post(this.routerPath('sendProductList'), ...guards, async (req, res) => {
+        const response = await this.dataValidate<SendCatalogDto>({
+          request: req,
+          schema: catalogMessageSchema,
+          ClassRef: SendCatalogDto,
+          execute: (instance, data) => sendMessageController.sendCatalog(instance, data),
         });
 
         return res.status(HttpStatus.CREATED).json(response);

@@ -186,3 +186,33 @@ export class SendCarouselDto extends Metadata {
   body: string;
   cards: CarouselCard[];
 }
+
+export class CatalogProductSection {
+  title: string;
+  productIds: string[];
+}
+
+export class SendProductDto extends Metadata {
+  productId: string;
+  title: string;
+  productImage: string;
+  description?: string;
+  currencyCode?: string;
+  priceAmount1000?: number;
+  retailerId?: string;
+  url?: string;
+  body?: string;
+  footer?: string;
+  businessOwnerJid?: string;
+}
+
+export class SendCatalogDto extends Metadata {
+  title: string;
+  description?: string;
+  footerText?: string;
+  buttonText: string;
+  headerImage: string;
+  businessOwnerJid?: string;
+  productIds?: string[];
+  sections?: CatalogProductSection[];
+}

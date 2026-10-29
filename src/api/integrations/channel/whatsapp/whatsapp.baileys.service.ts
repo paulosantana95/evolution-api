@@ -43,11 +43,13 @@ import {
   SendAudioDto,
   SendButtonsDto,
   SendCarouselDto,
+  SendCatalogDto,
   SendContactDto,
   SendListDto,
   SendLocationDto,
   SendMediaDto,
   SendPollDto,
+  SendProductDto,
   SendPtvDto,
   SendReactionDto,
   SendStatusDto,
@@ -164,6 +166,7 @@ import {
   buildPixBizNodes,
   toNativeFlowButton,
 } from './helpers/interactiveMessage.helper';
+import { normalizeListType } from './helpers/listMessage.helper';
 import { flattenPlainExtendedText, pickQuoteContextInfo } from './helpers/prepareMessage.helper';
 import { useVoiceCallsBaileys } from './voiceCalls/useVoiceCallsBaileys';
 
@@ -234,12 +237,6 @@ async function getVideoDuration(input: Buffer | string | Readable): Promise<numb
   const duration = generalTrack.Duration;
 
   return Math.round(parseFloat(duration));
-}
-
-function normalizeListType(listMessage?: proto.Message.IListMessage | null): void {
-  if (listMessage?.listType === proto.Message.ListMessage.ListType.PRODUCT_LIST) {
-    listMessage.listType = proto.Message.ListMessage.ListType.SINGLE_SELECT;
-  }
 }
 
 export class BaileysStartupService extends ChannelStartupService {
@@ -2440,6 +2437,14 @@ export class BaileysStartupService extends ChannelStartupService {
     // NOTE: NÃO DEVEMOS GERAR O messageId AQUI, SOMENTE SE VIER INFORMADO POR PARAMETRO. A GERAÇÃO ANTERIOR IMPEDE O WZAP DE IDENTIFICAR A SOURCE.
     if (messageId) option.messageId = messageId;
 
+    if (message['product']) {
+      return await this.client.sendMessage(
+        sender,
+        message as unknown as AnyMessageContent,
+        option as unknown as MiscMessageGenerationOptions,
+      );
+    }
+
     if (message['viewOnceMessage'] || message['interactiveMessage'] || message['listMessage']) {
       const m = generateWAMessageFromContent(sender, message, {
         timestamp: new Date(),
@@ -3887,6 +3892,144 @@ export class BaileysStartupService extends ChannelStartupService {
       false,
       [buildListBizNode()],
     );
+  }
+
+  public async productMessage(data: SendProductDto) {
+    if (!data.productId || !data.title || !data.productImage) {
+      throw new BadRequestException('productId, title and productImage are required');
+    }
+
+    const productImage = this.toMediaUpload(data.productImage);
+    const businessOwnerJid = createJid(data.businessOwnerJid || this.instance.wuid);
+
+    return await this.sendMessageWithTyping(
+      data.number,
+      {
+        product: {
+          productId: data.productId,
+          title: data.title,
+          description: data.description || '',
+          currencyCode: data.currencyCode || 'BRL',
+          priceAmount1000: data.priceAmount1000,
+          retailerId: data.retailerId,
+          url: data.url,
+          productImageCount: 1,
+          productImage,
+        },
+        businessOwnerJid,
+        body: data.body,
+        footer: data.footer,
+      } as any,
+      {
+        delay: data?.delay,
+        presence: 'composing',
+        quoted: data?.quoted,
+        mentionsEveryOne: data?.mentionsEveryOne,
+        mentioned: data?.mentioned,
+      },
+    );
+  }
+
+  public async catalogMessage(data: SendCatalogDto) {
+    const sections = this.resolveCatalogSections(data);
+    const productCount = sections.reduce((total, section) => total + section.productIds.length, 0);
+    if (productCount === 0) {
+      throw new BadRequestException('At least one productId is required (productIds or sections)');
+    }
+    if (productCount > 30) {
+      throw new BadRequestException('Maximum of 30 products allowed in a catalog list');
+    }
+
+    const firstProductId = sections[0].productIds[0];
+    const jpegThumbnail = await this.jpegThumbnailFromMedia(data.headerImage);
+    const businessOwnerJid = createJid(data.businessOwnerJid || this.instance.wuid);
+
+    const message: proto.IMessage = {
+      listMessage: {
+        title: data.title || '',
+        description: data.description || '',
+        buttonText: data.buttonText || 'Ver catálogo',
+        footerText: data.footerText || '',
+        listType: proto.Message.ListMessage.ListType.PRODUCT_LIST,
+        productListInfo: {
+          businessOwnerJid,
+          headerImage: {
+            productId: firstProductId,
+            jpegThumbnail,
+          },
+          productSections: sections.map((section) => ({
+            title: section.title || '',
+            products: section.productIds.map((productId) => ({ productId })),
+          })),
+        },
+      },
+    };
+
+    return await this.sendMessageWithTyping(
+      data.number,
+      message,
+      {
+        delay: data?.delay,
+        presence: 'composing',
+        quoted: data?.quoted,
+        mentionsEveryOne: data?.mentionsEveryOne,
+        mentioned: data?.mentioned,
+      },
+      false,
+      [buildListBizNode()],
+    );
+  }
+
+  private resolveCatalogSections(data: SendCatalogDto): { title: string; productIds: string[] }[] {
+    if (data.sections?.length) {
+      return data.sections
+        .map((section) => ({
+          title: section.title,
+          productIds: (section.productIds || []).filter(Boolean),
+        }))
+        .filter((section) => section.productIds.length > 0);
+    }
+
+    const productIds = (data.productIds || []).filter(Boolean);
+    if (!productIds.length) {
+      return [];
+    }
+
+    return [{ title: data.title || 'Catálogo', productIds }];
+  }
+
+  private toMediaUpload(media: string) {
+    const raw = media.replace(/^data:image\/[^;]+;base64,/, '');
+    if (isURL(media)) {
+      return { url: media };
+    }
+    return Buffer.from(raw, 'base64');
+  }
+
+  private async jpegThumbnailFromMedia(media: string): Promise<Buffer> {
+    let imageBuffer: Buffer;
+    if (isURL(media)) {
+      let config: any = { responseType: 'arraybuffer' };
+      if (this.localProxy?.enabled) {
+        config = {
+          ...config,
+          httpsAgent: makeProxyAgent({
+            host: this.localProxy.host,
+            port: this.localProxy.port,
+            protocol: this.localProxy.protocol,
+            username: this.localProxy.username,
+            password: this.localProxy.password,
+          }),
+        };
+      }
+      const response = await axios.get(media, config);
+      imageBuffer = Buffer.from(response.data, 'binary');
+    } else {
+      const raw = media.replace(/^data:image\/[^;]+;base64,/, '');
+      imageBuffer = Buffer.from(raw, 'base64');
+    }
+
+    return sharp(imageBuffer).resize(100).jpeg().toBuffer();
   }
 
   public async carouselMessage(data: SendCarouselDto) {
@@ -5585,8 +5728,11 @@ export class BaileysStartupService extends ChannelStartupService {
         catalog: productsCatalog,
       };
     } catch (error) {
-      console.log(error);
-      return { wuid: jid, name: null, isBusiness: false };
+      this.logger.error(['Error fetchCatalog', error]);
+      if (error?.status && error?.error) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Error fetchCatalog', error?.toString?.() || String(error));
     }
   }
 
@@ -5633,8 +5779,12 @@ export class BaileysStartupService extends ChannelStartupService {
         collectionsLength: collections?.length,
         collections: collections,
       };
-    } catch {
-      return { wuid: jid, name: null, isBusiness: false };
+    } catch (error) {
+      this.logger.error(['Error fetchCollections', error]);
+      if (error?.status && error?.error) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Error fetchCollections', error?.toString?.() || String(error));
     }
   }
 

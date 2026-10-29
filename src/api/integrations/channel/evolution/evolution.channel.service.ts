@@ -760,6 +760,12 @@ export class EvolutionStartupService extends ChannelStartupService {
   public async listMessage() {
     throw new BadRequestException('Method not available on Evolution Channel');
   }
+  public async productMessage() {
+    throw new BadRequestException('Method not available on Evolution Channel');
+  }
+  public async catalogMessage() {
+    throw new BadRequestException('Method not available on Evolution Channel');
+  }
   public async templateMessage() {
     throw new BadRequestException('Method not available on Evolution Channel');
   }
