@@ -56,7 +56,8 @@ export abstract class RouterBroker {
       // Create has no :instanceName path param — the body is the legitimate source of
       // instanceName. Still drop instanceId so a client cannot pre-assign the PK
       // (the controller always generates it).
-      const { instanceId: _ignoredInstanceId, ...createBody } = (body || {}) as Record<string, any>;
+      const createBody = { ...((body || {}) as Record<string, any>) };
+      delete createBody.instanceId;
       Object.assign(instance, createBody);
     }
 
