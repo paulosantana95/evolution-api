@@ -1,3 +1,23 @@
+# 2.4.0-paulosantana95 (fork)
+
+Custom image from `2.4.0-rc2` for `ghcr.io/paulosantana95/evolution-api:2.4.0-paulosantana95`. Does **not** take Prisma 7 / Express 5 / the rest of upstream #2575. License flow is unchanged.
+
+### Fixed
+
+- Cross-instance auth bypass via query/body override (#2549 / #2435), with `instance/create` still accepting `instanceName` from the body.
+- Healthy instances no longer logged out after `stream:error` 515 (#2509).
+- PIX `payment_info` now sends the Android/iOS payload (upstream PR #2742).
+- Baileys `7.0.0-rc.9` → `7.0.0-rc13` (CVE-2026-48063); waveform patch dropped; `whatsapp-rust-bridge` overridden to `0.5.5`.
+- Text replies keep quote `contextInfo` (#2713). S3/video skip no longer `return`s before `MESSAGES_UPSERT` (#2647).
+- `fetchCatalog` / `fetchCollections` rethrow instead of `{ isBusiness: false }`. `PRODUCT_LIST` with `productListInfo` is no longer rewritten to `SINGLE_SELECT`.
+
+### Added
+
+- `POST /message/sendProduct/{instance}`, `POST /message/sendCatalog/{instance}` (alias `sendProductList`). Contract: `docs/catalog-send.md`.
+- GHCR workflow on git tag `2.4.0-paulosantana95` (does not publish on branch push).
+
+---
+
 # 2.4.0-rc2 (2026-05-17)
 
 Estabilização sobre `2.4.0-rc1`. Sem mudanças de banco nem de contrato HTTP — apenas fixes em fluxos do Baileys/WhatsApp e Evolution Channel, suporte nativo a GIF e um caminho opcional de auto-ativação headless da licença.
