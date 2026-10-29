@@ -1,0 +1,119 @@
+{
+  "base": "http://127.0.0.1:8080",
+  "licenseActive": false,
+  "licenseStatus": {
+    "status": "inactive",
+    "instance_id": "50114811-0c48-4808-b23a-32623a33383a"
+  },
+  "at": "2026-10-26T17:58:02.027Z",
+  "results": [
+    {
+      "name": "GET /license/status (public)",
+      "method": "GET",
+      "path": "/license/status",
+      "status": 200,
+      "ms": 41,
+      "json": {
+        "status": "inactive",
+        "instance_id": "50114811-0c48-4808-b23a-32623a33383a"
+      },
+      "text": "{\"status\":\"inactive\",\"instance_id\":\"50114811-0c48-4808-b23a-32623a33383a\"}",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "GET / (root is on the license allowlist)",
+      "method": "GET",
+      "path": "/",
+      "status": 200,
+      "ms": 118,
+      "json": {
+        "status": 200,
+        "message": "Welcome to the Evolution API, it is working!",
+        "version": "2.4.0",
+        "clientName": "evolution_exchange",
+        "manager": "http://127.0.0.1:8080/manager",
+        "documentation": "https://doc.evolution-api.com",
+        "whatsappWebVersion": "2.3000.1051718708"
+      },
+      "text": "{\"status\":200,\"message\":\"Welcome to the Evolution API, it is working!\",\"version\":\"2.4.0\",\"clientName\":\"evolution_exchange\",\"manager\":\"http://127.0.0.1:8080/manager\",\"documentation\":\"https://doc.evolution-api.com\",\"whatsappWebVersion\":\"2.3000.1051718708\"}",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "GET /health if present",
+      "method": "GET",
+      "path": "/health",
+      "status": 404,
+      "ms": 3,
+      "json": {
+        "status": 404,
+        "error": "Not Found",
+        "response": {
+          "message": [
+            "Cannot GET /health"
+          ]
+        }
+      },
+      "text": "{\"status\":404,\"error\":\"Not Found\",\"response\":{\"message\":[\"Cannot GET /health\"]}}",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "POST /instance/create without apikey",
+      "method": "POST",
+      "path": "/instance/create",
+      "status": 503,
+      "ms": 17,
+      "json": {
+        "error": "service not activated",
+        "code": "LICENSE_REQUIRED",
+        "register_url": "http://127.0.0.1:8080/manager/login",
+        "instance_id": "50114811-0c48-4808-b23a-32623a33383a",
+        "docs_url": "https://docs.evolutionfoundation.com.br/licensing",
+        "message": "This Evolution API instance is not activated. Open http://127.0.0.1:8080/manager/login to activate, or set AUTHENTICATION_API_KEY in your .env with a valid licensing key. Docs: https://docs.evolutionfoundation.com.br/licensing"
+      },
+      "text": "{\"error\":\"service not activated\",\"code\":\"LICENSE_REQUIRED\",\"register_url\":\"http://127.0.0.1:8080/manager/login\",\"instance_id\":\"50114811-0c48-4808-b23a-32623a33383a\",\"docs_url\":\"https://docs.evolutionfoundation.com.br/licensing\",\"message\":\"This Evolution API instance is not activated. Open http://127.0.0.1:8080/manager/login to activate, or set AUTHENTICATION_API_KEY in your .env with a valid licensing key. Docs: https://docs.evolutionfoundation.com.br/licensing\"}",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "POST /instance/create with global key (blocked by license)",
+      "method": "POST",
+      "path": "/instance/create",
+      "status": 503,
+      "ms": 2,
+      "json": {
+        "error": "service not activated",
+        "code": "LICENSE_REQUIRED",
+        "register_url": "http://127.0.0.1:8080/manager/login",
+        "instance_id": "50114811-0c48-4808-b23a-32623a33383a",
+        "docs_url": "https://docs.evolutionfoundation.com.br/licensing",
+        "message": "This Evolution API instance is not activated. Open http://127.0.0.1:8080/manager/login to activate, or set AUTHENTICATION_API_KEY in your .env with a valid licensing key. Docs: https://docs.evolutionfoundation.com.br/licensing"
+      },
+      "text": "{\"error\":\"service not activated\",\"code\":\"LICENSE_REQUIRED\",\"register_url\":\"http://127.0.0.1:8080/manager/login\",\"instance_id\":\"50114811-0c48-4808-b23a-32623a33383a\",\"docs_url\":\"https://docs.evolutionfoundation.com.br/licensing\",\"message\":\"This Evolution API instance is not activated. Open http://127.0.0.1:8080/manager/login to activate, or set AUTHENTICATION_API_KEY in your .env with a valid licensing key. Docs: https://docs.evolutionfoundation.com.br/licensing\"}",
+      "error": null,
+      "pass": true
+    },
+    {
+      "name": "POST /message/sendText (blocked by license)",
+      "method": "POST",
+      "path": "/message/sendText/nope",
+      "status": 503,
+      "ms": 2,
+      "json": {
+        "error": "service not activated",
+        "code": "LICENSE_REQUIRED",
+        "register_url": "http://127.0.0.1:8080/manager/login",
+        "instance_id": "50114811-0c48-4808-b23a-32623a33383a",
+        "docs_url": "https://docs.evolutionfoundation.com.br/licensing",
+        "message": "This Evolution API instance is not activated. Open http://127.0.0.1:8080/manager/login to activate, or set AUTHENTICATION_API_KEY in your .env with a valid licensing key. Docs: https://docs.evolutionfoundation.com.br/licensing"
+      },
+      "text": "{\"error\":\"service not activated\",\"code\":\"LICENSE_REQUIRED\",\"register_url\":\"http://127.0.0.1:8080/manager/login\",\"instance_id\":\"50114811-0c48-4808-b23a-32623a33383a\",\"docs_url\":\"https://docs.evolutionfoundation.com.br/licensing\",\"message\":\"This Evolution API instance is not activated. Open http://127.0.0.1:8080/manager/login to activate, or set AUTHENTICATION_API_KEY in your .env with a valid licensing key. Docs: https://docs.evolutionfoundation.com.br/licensing\"}",
+      "error": null,
+      "pass": true
+    }
+  ],
+  "passed": 6,
+  "failed": 0
+}

@@ -8,6 +8,7 @@ on:
 jobs:
   build_deploy:
     name: Build and Deploy
+    if: github.ref != 'refs/tags/2.4.0-paulosantana95'
     runs-on: ubuntu-latest
     permissions:
       contents: read

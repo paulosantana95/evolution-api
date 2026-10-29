@@ -1507,6 +1507,14 @@ export class BusinessStartupService extends ChannelStartupService {
     });
   }
 
+  public async productMessage() {
+    throw new BadRequestException('Method not available on WhatsApp Business API channel');
+  }
+
+  public async catalogMessage() {
+    throw new BadRequestException('Method not available on WhatsApp Business API channel');
+  }
+
   public async templateMessage(data: SendTemplateDto, isIntegration = false) {
     const res = await this.sendMessageWithTyping(
       data.number,

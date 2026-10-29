@@ -3,11 +3,13 @@ import {
   SendAudioDto,
   SendButtonsDto,
   SendCarouselDto,
+  SendCatalogDto,
   SendContactDto,
   SendListDto,
   SendLocationDto,
   SendMediaDto,
   SendPollDto,
+  SendProductDto,
   SendPtvDto,
   SendReactionDto,
   SendStatusDto,
@@ -108,5 +110,13 @@ export class SendMessageController {
 
   public async sendStatus({ instanceName }: InstanceDto, data: SendStatusDto, file?: any) {
     return await this.waMonitor.waInstances[instanceName].statusMessage(data, file);
+  }
+
+  public async sendProduct({ instanceName }: InstanceDto, data: SendProductDto) {
+    return await this.waMonitor.waInstances[instanceName].productMessage(data);
+  }
+
+  public async sendCatalog({ instanceName }: InstanceDto, data: SendCatalogDto) {
+    return await this.waMonitor.waInstances[instanceName].catalogMessage(data);
   }
 }

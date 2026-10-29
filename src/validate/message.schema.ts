@@ -516,6 +516,101 @@ export const carouselMessageSchema: JSONSchema7 = {
   required: ['number', 'body', 'cards'],
 };
 
+export const productMessageSchema: JSONSchema7 = {
+  $id: v4(),
+  type: 'object',
+  properties: {
+    number: { ...numberDefinition },
+    productId: { type: 'string' },
+    title: { type: 'string' },
+    productImage: { type: 'string' },
+    description: { type: 'string' },
+    currencyCode: { type: 'string' },
+    priceAmount1000: { type: 'integer', minimum: 0 },
+    retailerId: { type: 'string' },
+    url: { type: 'string' },
+    body: { type: 'string' },
+    footer: { type: 'string' },
+    businessOwnerJid: { type: 'string' },
+    delay: {
+      type: 'integer',
+      description: 'Enter a value in milliseconds',
+    },
+    quoted: { ...quotedOptionsSchema },
+    mentionsEveryOne: { type: 'boolean', enum: [true, false] },
+    mentioned: {
+      type: 'array',
+      minItems: 1,
+      uniqueItems: true,
+      items: {
+        type: 'string',
+        pattern: '^\\d+',
+        description: '"mentioned" must be an array of numeric strings',
+      },
+    },
+  },
+  required: ['number', 'productId', 'title', 'productImage'],
+  ...isNotEmpty('number', 'productId', 'title', 'productImage'),
+};
+
+export const catalogMessageSchema: JSONSchema7 = {
+  $id: v4(),
+  type: 'object',
+  properties: {
+    number: { ...numberDefinition },
+    title: { type: 'string' },
+    description: { type: 'string' },
+    footerText: { type: 'string' },
+    buttonText: { type: 'string' },
+    headerImage: { type: 'string' },
+    businessOwnerJid: { type: 'string' },
+    productIds: {
+      type: 'array',
+      minItems: 1,
+      maxItems: 30,
+      uniqueItems: true,
+      items: { type: 'string', minLength: 1 },
+    },
+    sections: {
+      type: 'array',
+      minItems: 1,
+      items: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          productIds: {
+            type: 'array',
+            minItems: 1,
+            maxItems: 30,
+            uniqueItems: true,
+            items: { type: 'string', minLength: 1 },
+          },
+        },
+        required: ['title', 'productIds'],
+        ...isNotEmpty('title'),
+      },
+    },
+    delay: {
+      type: 'integer',
+      description: 'Enter a value in milliseconds',
+    },
+    quoted: { ...quotedOptionsSchema },
+    mentionsEveryOne: { type: 'boolean', enum: [true, false] },
+    mentioned: {
+      type: 'array',
+      minItems: 1,
+      uniqueItems: true,
+      items: {
+        type: 'string',
+        pattern: '^\\d+',
+        description: '"mentioned" must be an array of numeric strings',
+      },
+    },
+  },
+  required: ['number', 'title', 'buttonText', 'headerImage'],
+  ...isNotEmpty('number', 'title', 'buttonText', 'headerImage'),
+};
+
 export const decryptPollVoteSchema: JSONSchema7 = {
   $id: v4(),
   type: 'object',

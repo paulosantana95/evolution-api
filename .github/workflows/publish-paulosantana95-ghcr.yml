@@ -1,0 +1,53 @@
+name: Publish 2.4.0-paulosantana95 to GHCR
+
+# Publishes ghcr.io/paulosantana95/evolution-api:2.4.0-paulosantana95 when that
+# git tag is pushed on this fork. Does not run on branch pushes.
+on:
+  push:
+    tags:
+      - '2.4.0-paulosantana95'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/paulosantana95/evolution-api
+
+jobs:
+  build-and-push:
+    name: Build and push GHCR
+    if: github.repository_owner == 'paulosantana95'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ${{ env.IMAGE }}:2.4.0-paulosantana95
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
