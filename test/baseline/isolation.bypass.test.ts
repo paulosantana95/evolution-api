@@ -3,44 +3,77 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 /**
- * Replica of RouterBroker.dataValidate instance merge (abstract.router.ts 34-38).
- * We do not import RouterBroker: that file's import graph boots the whole app
- * (circular RouterBroker init) and is not needed to reproduce #2435.
+ * Replica of RouterBroker.dataValidate instance merge after #2549, including
+ * the create-body exception (instanceName must come from the JSON body because
+ * POST /instance/create has no :instanceName path param).
  */
-function mergeInstanceLikeRc2(pathInstanceName: string, query: Record<string, unknown>) {
-  const instance: Record<string, unknown> = { instanceName: pathInstanceName };
+const PROTECTED_INSTANCE_FIELDS = ['instanceName', 'instanceId'] as const;
+
+function sanitizeUntrustedInput(source: Record<string, any> | undefined): Record<string, any> {
+  if (!source || typeof source !== 'object') return {};
+  const sanitized: Record<string, any> = {};
+  for (const [key, value] of Object.entries(source)) {
+    if ((PROTECTED_INSTANCE_FIELDS as readonly string[]).includes(key)) continue;
+    sanitized[key] = value;
+  }
+  return sanitized;
+}
+
+function mergeInstanceLikePatched(
+  pathInstanceName: string | undefined,
+  query: Record<string, unknown>,
+  body: Record<string, unknown> = {},
+  originalUrl = '/instance/connectionState/instance-A',
+) {
+  const instance: Record<string, unknown> = {};
+  if (pathInstanceName !== undefined) instance.instanceName = pathInstanceName;
   if (query && Object.keys(query).length > 0) {
-    Object.assign(instance, query);
+    Object.assign(instance, sanitizeUntrustedInput(query));
+  }
+  if (originalUrl.includes('/instance/create')) {
+    const { instanceId: _ignored, ...createBody } = body;
+    Object.assign(instance, createBody);
   }
   return instance;
 }
 
-test('isolation (#2435): dataValidate overwrites path instanceName with ?instanceName=', () => {
-  const seen = mergeInstanceLikeRc2('instance-A', { instanceName: 'instance-B' });
-  assert.equal(seen.instanceName, 'instance-B');
-});
-
-test('isolation (#2435): dataValidate also copies instanceId from the query string', () => {
-  const seen = mergeInstanceLikeRc2('instance-A', { instanceId: 'victim-id' });
-  assert.equal(seen.instanceId, 'victim-id');
+test('isolation (#2435): query instanceName no longer overrides the path instance', () => {
+  const seen = mergeInstanceLikePatched('instance-A', { instanceName: 'instance-B' });
   assert.equal(seen.instanceName, 'instance-A');
 });
 
-test('isolation (#2435): auth.guard only reads req.params, never req.query (source contract)', () => {
+test('isolation (#2435): query instanceId is ignored', () => {
+  const seen = mergeInstanceLikePatched('instance-A', { instanceId: 'victim-id', delay: '1' });
+  assert.equal(seen.instanceId, undefined);
+  assert.equal(seen.instanceName, 'instance-A');
+  assert.equal(seen.delay, '1');
+});
+
+test('isolation (#2435): POST /instance/create still reads instanceName from the body', () => {
+  const seen = mergeInstanceLikePatched(undefined, {}, { instanceName: 'new-shop', token: 'T' }, '/instance/create');
+  assert.equal(seen.instanceName, 'new-shop');
+  assert.equal(seen.token, 'T');
+});
+
+test('isolation (#2435): POST /instance/create drops client-supplied instanceId', () => {
+  const seen = mergeInstanceLikePatched(
+    undefined,
+    {},
+    { instanceName: 'new-shop', instanceId: 'forged-id' },
+    '/instance/create',
+  );
+  assert.equal(seen.instanceName, 'new-shop');
+  assert.equal(seen.instanceId, undefined);
+});
+
+test('isolation (#2435): source uses sanitizeUntrustedInput on query', () => {
   const guardSrc = readFileSync('src/api/guards/auth.guard.ts', 'utf8');
   assert.match(guardSrc, /const param = req\.params as unknown as InstanceDto/);
   assert.equal(guardSrc.includes('req.query'), false);
-  assert.match(guardSrc, /if \(instance\.token === key\)/);
 
   const routerSrc = readFileSync('src/api/abstract/abstract.router.ts', 'utf8');
-  assert.match(routerSrc, /Object\.assign\(instance, request\.query\)/);
-  // The develop fix (PR #2549) is NOT in rc2.
-  assert.equal(routerSrc.includes('sanitizeUntrustedInput'), false);
-  assert.equal(routerSrc.includes('PROTECTED_INSTANCE_FIELDS'), false);
-});
-
-test('isolation (#2435): connectionState uses the (possibly overwritten) instanceName', () => {
-  const controllerSrc = readFileSync('src/api/controllers/instance.controller.ts', 'utf8');
-  assert.match(controllerSrc, /public async connectionState\(\{ instanceName \}: InstanceDto\)/);
-  assert.match(controllerSrc, /this\.waMonitor\.waInstances\[instanceName\]/);
+  assert.match(routerSrc, /sanitizeUntrustedInput/);
+  assert.match(routerSrc, /PROTECTED_INSTANCE_FIELDS/);
+  assert.match(routerSrc, /Object\.assign\(instance, sanitizeUntrustedInput\(request\.query/);
+  assert.equal(routerSrc.includes('Object.assign(instance, request.query)'), false);
 });

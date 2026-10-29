@@ -120,11 +120,15 @@ if (!licenseActive) {
     },
   );
   const leaked = bypass.json?.instance?.instanceName === nameB;
+  const stayedOnA = bypass.json?.instance?.instanceName === nameA;
   bypass.reproducedCrossInstanceBypass = leaked;
   bypass.notes = leaked
-    ? 'REPRODUCED #2435: token A operated instance B via query override'
-    : 'Query override did not change instanceName (unexpected on rc2, or already patched)';
-  console.log(`  instanceName returned: ${bypass.json?.instance?.instanceName} (expected B=${nameB} on rc2)`);
+    ? 'REGRESSION #2435: token A operated instance B via query override'
+    : stayedOnA
+      ? 'FIXED #2435: query instanceName ignored, stayed on A'
+      : `unexpected instanceName=${bypass.json?.instance?.instanceName}`;
+  bypass.pass = bypass.pass && stayedOnA && !leaked;
+  console.log(`  instanceName returned: ${bypass.json?.instance?.instanceName} (expected A=${nameA} after #2549)`);
 
   await call('token A cannot use path B (auth should 401)', 'GET', `/instance/connectionState/${nameB}`, {
     headers: { apikey: tokenA },

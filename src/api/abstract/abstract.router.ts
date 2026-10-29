@@ -53,7 +53,11 @@ export abstract class RouterBroker {
     }
 
     if (request.originalUrl.includes('/instance/create')) {
-      Object.assign(instance, sanitizeUntrustedInput(body));
+      // Create has no :instanceName path param — the body is the legitimate source of
+      // instanceName. Still drop instanceId so a client cannot pre-assign the PK
+      // (the controller always generates it).
+      const { instanceId: _ignoredInstanceId, ...createBody } = (body || {}) as Record<string, any>;
+      Object.assign(instance, createBody);
     }
 
     Object.assign(ref, body);
