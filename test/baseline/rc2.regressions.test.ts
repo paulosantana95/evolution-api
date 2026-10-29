@@ -114,11 +114,12 @@ test('#2597 PENDING: send path stores Baileys status as-is (no local SERVER_ACK 
   assert.match(prepare, /if \(!messageRaw\.status && message\.key\.fromMe === false\)/);
 });
 
-test('#2509 / #2658 disconnect: 401 loggedOut after stream:error 515 is treated as real logout (fixed on develop)', () => {
+test('#2509 / #2658 disconnect: loggedOut after stream:error 515 reconnects within the grace window', () => {
   const src = readFileSync('src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts', 'utf8');
-  // The develop fix lives in #2509 (1d38d4f6), which is AFTER rc2.
-  // rc2 still has a close handler that maps loggedOut → logout.instance.
-  assert.match(src, /loggedOut|DisconnectReason/);
+  assert.match(src, /STREAM_515_RECONNECT_GRACE_MS/);
+  assert.match(src, /STREAM_ERROR_CODE_RECONNECT/);
+  assert.match(src, /CB:stream:error/);
+  assert.match(src, /statusCode === DisconnectReason\.loggedOut && recentStream515/);
 });
 
 test('#2618 Passkey: no passkey / webauthn handling in the Baileys channel', () => {
