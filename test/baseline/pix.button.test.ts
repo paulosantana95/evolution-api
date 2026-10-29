@@ -5,6 +5,7 @@ import test from 'node:test';
 import { Button } from '../../src/api/dto/sendMessage.dto';
 import {
   buildInteractiveBizNode,
+  buildPixBizNodes,
   toNativeFlowButton,
 } from '../../src/api/integrations/channel/whatsapp/helpers/interactiveMessage.helper';
 
@@ -41,43 +42,59 @@ test('pix: toNativeFlowButton builds payment_info with pix_static_code', () => {
   assert.equal(params.currency, 'BRL');
 });
 
-test('pix (PR #2742 gap): generic biz node uses native_flow name=mixed, not payment_info', () => {
+test('pix: generic biz node still uses native_flow name=mixed for non-PIX interactive', () => {
   const node = buildInteractiveBizNode();
   assert.equal(node.tag, 'biz');
   const interactive = (node.content as any[])[0];
   const flow = interactive.content[0];
   assert.equal(flow.attrs.name, 'mixed');
-  assert.notEqual(flow.attrs.name, 'payment_info');
 });
 
-test('pix (PR #2742 gap): helper has no buildPixBizNodes and no <bot biz_bot="1">', () => {
+test('pix (PR #2742): 1:1 PIX stanza uses payment_info biz node and bot biz_bot=1', () => {
+  const nodes = buildPixBizNodes('5511999999999@s.whatsapp.net');
+  assert.equal(nodes.length, 2);
+  assert.equal(nodes[0].tag, 'biz');
+  const interactive = (nodes[0].content as any[])[0];
+  const flow = interactive.content[0];
+  assert.equal(flow.attrs.name, 'payment_info');
+  assert.equal(nodes[1].tag, 'bot');
+  assert.equal(nodes[1].attrs.biz_bot, '1');
+});
+
+test('pix (PR #2742): group PIX stanza omits bot biz_bot', () => {
+  const nodes = buildPixBizNodes('120363000000000000@g.us');
+  assert.equal(nodes.length, 1);
+  assert.equal(nodes[0].tag, 'biz');
+  const interactive = (nodes[0].content as any[])[0];
+  const flow = interactive.content[0];
+  assert.equal(flow.attrs.name, 'payment_info');
+});
+
+test('pix (PR #2742): helper exports buildPixBizNodes with payment_info and biz_bot', () => {
   const helperSrc = readFileSync(
     'src/api/integrations/channel/whatsapp/helpers/interactiveMessage.helper.ts',
     'utf8',
   );
-  assert.equal(helperSrc.includes('buildPixBizNodes'), false);
-  assert.equal(helperSrc.includes('biz_bot'), false);
-  // Button name is payment_info (payload), but the <native_flow> biz node is "mixed".
-  assert.match(helperSrc, /attrs: \{ v: '9', name: 'mixed' \}/);
-  assert.equal(helperSrc.includes("attrs: { name: 'payment_info' }"), false);
+  assert.equal(helperSrc.includes('buildPixBizNodes'), true);
+  assert.equal(helperSrc.includes('biz_bot'), true);
+  assert.match(helperSrc, /attrs: \{ name: 'payment_info' \}/);
 });
 
-test('pix (PR #2742 gap): rc2 PIX branch sends from/api templateId, not order_details', () => {
+test('pix (PR #2742): PIX branch sends order_details, messageVersion and messageSecret', () => {
   const serviceSrc = readFileSync('src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts', 'utf8');
   assert.match(serviceSrc, /name: this\.mapType\.get\('pix'\)/);
-  assert.match(serviceSrc, /from: 'api'/);
-  assert.match(serviceSrc, /templateId: v4\(\)/);
-  assert.equal(serviceSrc.includes("native_flow_name: 'order_details'"), false);
-  assert.equal(serviceSrc.includes('buildPixBizNodes'), false);
-  const pixOnly = serviceSrc.slice(serviceSrc.indexOf('// PIX'), serviceSrc.indexOf('// CTA (url / call / copy)'));
-  assert.equal(pixOnly.includes('messageVersion'), false);
-  // Title is ignored on the PIX branch (no body.text from data.title).
+  assert.match(serviceSrc, /native_flow_name: 'order_details'/);
+  assert.match(serviceSrc, /buildPixBizNodes/);
   const pixBlock = serviceSrc.slice(
     serviceSrc.indexOf('// PIX'),
     serviceSrc.indexOf('// CTA (url / call / copy)'),
   );
-  assert.equal(pixBlock.includes('data.title'), false);
-  assert.equal(pixBlock.includes('messageContextInfo'), false);
+  assert.match(pixBlock, /messageVersion: 1/);
+  assert.match(pixBlock, /data\.title/);
+  assert.match(pixBlock, /messageContextInfo/);
+  assert.match(pixBlock, /messageSecret: randomBytes\(32\)/);
+  assert.equal(pixBlock.includes("from: 'api'"), false);
+  assert.equal(pixBlock.includes('templateId: v4()'), false);
 });
 
 test('pix: sendButtons is the only public PIX endpoint (no dedicated /message/sendPix)', () => {
