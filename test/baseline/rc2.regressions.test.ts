@@ -5,59 +5,55 @@ import { validate } from 'jsonschema';
 
 import { textMessageSchema } from '../../src/validate/message.schema';
 
-/**
- * Replica of BaileysStartupService.prepareMessage flattening
- * (whatsapp.baileys.service.ts ~5209-5226). Kept in the test so we can
- * reproduce #2713 without instantiating the 5k-line service.
- */
-function flattenLikePrepareMessage(messageRaw: any): any {
-  if (messageRaw.message.extendedTextMessage) {
-    messageRaw.messageType = 'conversation';
-    messageRaw.message.conversation = messageRaw.message.extendedTextMessage.text;
-    delete messageRaw.message.extendedTextMessage;
-  }
-  const quotedMessage = messageRaw?.contextInfo?.quotedMessage;
-  if (quotedMessage) {
-    if (quotedMessage.extendedTextMessage) {
-      quotedMessage.conversation = quotedMessage.extendedTextMessage.text;
-      delete quotedMessage.extendedTextMessage;
-    }
-  }
-  return messageRaw;
-}
+import {
+  flattenPlainExtendedText,
+  pickQuoteContextInfo,
+} from '../../src/api/integrations/channel/whatsapp/helpers/prepareMessage.helper';
 
-test('#2713 contextInfo: prepareMessage assigns messageContextInfo (not quote contextInfo)', () => {
+test('#2713 contextInfo: prepareMessage prefers quote contextInfo over messageContextInfo', () => {
   const src = readFileSync('src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts', 'utf8');
-  assert.match(src, /contextInfo: this\.deserializeMessageBuffers\(message\.message\?\.messageContextInfo\)/);
-  assert.match(src, /if \(messageRaw\.message\.extendedTextMessage\) \{/);
-  assert.match(src, /delete messageRaw\.message\.extendedTextMessage/);
+  assert.match(src, /pickQuoteContextInfo/);
+  assert.match(src, /flattenPlainExtendedText\(messageRaw\)/);
+  assert.equal(src.includes('delete messageRaw.message.extendedTextMessage'), false);
 });
 
-test('#2713 contextInfo: flattening a text reply destroys stanzaId/quotedMessage', () => {
-  const inbound = {
-    messageType: 'extendedTextMessage',
-    message: {
-      messageContextInfo: { threadId: [], messageSecret: { 0: 1 } },
-      extendedTextMessage: {
-        text: 'Teste',
-        contextInfo: {
-          stanzaId: 'ORIG-MSG-ID',
-          participant: '5562...@s.whatsapp.net',
-          quotedMessage: { conversation: 'original' },
-        },
+test('#2713 contextInfo: text reply keeps extendedTextMessage and stanzaId/quotedMessage', () => {
+  const inboundMessage = {
+    messageContextInfo: { threadId: [], messageSecret: { 0: 1 } },
+    extendedTextMessage: {
+      text: 'Teste',
+      contextInfo: {
+        stanzaId: 'ORIG-MSG-ID',
+        participant: '5562...@s.whatsapp.net',
+        quotedMessage: { conversation: 'original' },
       },
     },
-    contextInfo: { threadId: [], messageSecret: { 0: 1 } },
   };
 
-  const out = flattenLikePrepareMessage(structuredClone(inbound));
-  assert.equal(out.messageType, 'conversation');
-  assert.equal(out.message.conversation, 'Teste');
-  assert.equal(out.message.extendedTextMessage, undefined);
-  // Quote relationship is gone from message.*; only the (wrong) top-level
-  // contextInfo — messageSecret/threadId — remains.
-  assert.equal(out.contextInfo.stanzaId, undefined);
-  assert.equal(out.contextInfo.quotedMessage, undefined);
+  const messageRaw: any = {
+    messageType: 'extendedTextMessage',
+    message: structuredClone(inboundMessage),
+    contextInfo: pickQuoteContextInfo(inboundMessage as any) ?? inboundMessage.messageContextInfo,
+  };
+
+  flattenPlainExtendedText(messageRaw);
+
+  assert.equal(messageRaw.messageType, 'extendedTextMessage');
+  assert.equal(messageRaw.message.conversation, undefined);
+  assert.equal(messageRaw.message.extendedTextMessage.text, 'Teste');
+  assert.equal(messageRaw.contextInfo.stanzaId, 'ORIG-MSG-ID');
+  assert.equal(messageRaw.contextInfo.quotedMessage.conversation, 'original');
+});
+
+test('#2713 contextInfo: plain extendedText without quote still flattens to conversation', () => {
+  const messageRaw: any = {
+    messageType: 'extendedTextMessage',
+    message: { extendedTextMessage: { text: 'hello' } },
+  };
+  flattenPlainExtendedText(messageRaw);
+  assert.equal(messageRaw.messageType, 'conversation');
+  assert.equal(messageRaw.message.conversation, 'hello');
+  assert.equal(messageRaw.message.extendedTextMessage, undefined);
 });
 
 test('#2583 sendText: schema requires top-level {number,text}; nested textMessage is rejected', () => {
@@ -89,16 +85,16 @@ test('#2762 linkPreview: default is ON; generateLinkPreview failure returns unde
   assert.match(src, /return undefined;/);
 });
 
-test('#2647 MESSAGES_UPSERT: early `return` inside media/S3 block skips the webhook', () => {
+test('#2647 MESSAGES_UPSERT: S3/video skip does not return before the webhook', () => {
   const src = readFileSync('src/api/integrations/channel/whatsapp/whatsapp.baileys.service.ts', 'utf8');
-  const upsert = src.slice(src.indexOf("'messages.upsert':"), src.indexOf('this.sendDataWebhook(Events.MESSAGES_UPSERT'));
-  assert.match(upsert, /if \(isVideo && !this\.configService\.get<S3>\('S3'\)\.SAVE_VIDEO\)/);
-  assert.match(upsert, /return;/);
-  assert.match(upsert, /No valid media to upload \(messageContextInfo only\), skipping MinIO/);
-  // The webhook call is AFTER these returns, so they abort emission.
+  const upsertStart = src.indexOf("'messages.upsert':");
   const webhookIndex = src.indexOf('this.sendDataWebhook(Events.MESSAGES_UPSERT, messageRaw)');
-  const firstReturnInMedia = src.indexOf("this.logger.warn('Video upload is disabled. Skipping video upload.')");
-  assert.ok(firstReturnInMedia > 0 && firstReturnInMedia < webhookIndex);
+  const upsert = src.slice(upsertStart, webhookIndex);
+  assert.match(upsert, /skipVideoUpload/);
+  assert.match(upsert, /No valid media to upload \(messageContextInfo only\), skipping MinIO/);
+  assert.equal(/^\s+return;/m.test(upsert), false);
+  const firstSkip = src.indexOf("this.logger.warn('Video upload is disabled. Skipping video upload.')");
+  assert.ok(firstSkip > 0 && firstSkip < webhookIndex);
 });
 
 test('#2647 MESSAGES_UPSERT: type must be notify|append and received.message must exist', () => {

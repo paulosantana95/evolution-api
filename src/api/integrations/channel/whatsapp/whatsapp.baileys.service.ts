@@ -164,6 +164,7 @@ import {
   buildPixBizNodes,
   toNativeFlowButton,
 } from './helpers/interactiveMessage.helper';
+import { flattenPlainExtendedText, pickQuoteContextInfo } from './helpers/prepareMessage.helper';
 import { useVoiceCallsBaileys } from './voiceCalls/useVoiceCallsBaileys';
 
 export interface ExtendedIMessageKey extends proto.IMessageKey {
@@ -1582,52 +1583,50 @@ export class BaileysStartupService extends ChannelStartupService {
             if (isMedia) {
               if (this.configService.get<S3>('S3').ENABLE) {
                 try {
-                  if (isVideo && !this.configService.get<S3>('S3').SAVE_VIDEO) {
+                  const skipVideoUpload = Boolean(isVideo && !this.configService.get<S3>('S3').SAVE_VIDEO);
+                  if (skipVideoUpload) {
                     this.logger.warn('Video upload is disabled. Skipping video upload.');
-                    // Skip video upload by returning early from this block
-                    return;
                   }
 
                   const message: any = received;
 
                   // Verificação adicional para garantir que há conteúdo de mídia real
-                  const hasRealMedia = this.hasValidMediaContent(message);
+                  const hasRealMedia = !skipVideoUpload && this.hasValidMediaContent(message);
 
-                  if (!hasRealMedia) {
+                  if (!skipVideoUpload && !hasRealMedia) {
                     this.logger.warn('Message detected as media but contains no valid media content');
-                  } else {
+                  } else if (!skipVideoUpload && hasRealMedia) {
                     const media = await this.getBase64FromMediaMessage({ message }, true);
 
                     if (!media) {
                       this.logger.verbose('No valid media to upload (messageContextInfo only), skipping MinIO');
-                      return;
+                    } else {
+                      const { buffer, mediaType, fileName, size } = media;
+                      const mimetype = mimeTypes.lookup(fileName).toString();
+                      const fullName = join(
+                        `${this.instance.id}`,
+                        received.key.remoteJid,
+                        mediaType,
+                        `${Date.now()}_${fileName}`,
+                      );
+                      await s3Service.uploadFile(fullName, buffer, size.fileLength?.low, { 'Content-Type': mimetype });
+
+                      await this.prismaRepository.media.create({
+                        data: {
+                          messageId: msg.id,
+                          instanceId: this.instanceId,
+                          type: mediaType,
+                          fileName: fullName,
+                          mimetype,
+                        },
+                      });
+
+                      const mediaUrl = await s3Service.getObjectUrl(fullName);
+
+                      (messageRaw.message as any).mediaUrl = mediaUrl;
+
+                      await this.prismaRepository.message.update({ where: { id: msg.id }, data: messageRaw });
                     }
-
-                    const { buffer, mediaType, fileName, size } = media;
-                    const mimetype = mimeTypes.lookup(fileName).toString();
-                    const fullName = join(
-                      `${this.instance.id}`,
-                      received.key.remoteJid,
-                      mediaType,
-                      `${Date.now()}_${fileName}`,
-                    );
-                    await s3Service.uploadFile(fullName, buffer, size.fileLength?.low, { 'Content-Type': mimetype });
-
-                    await this.prismaRepository.media.create({
-                      data: {
-                        messageId: msg.id,
-                        instanceId: this.instanceId,
-                        type: mediaType,
-                        fileName: fullName,
-                        mimetype,
-                      },
-                    });
-
-                    const mediaUrl = await s3Service.getObjectUrl(fullName);
-
-                    (messageRaw.message as any).mediaUrl = mediaUrl;
-
-                    await this.prismaRepository.message.update({ where: { id: msg.id }, data: messageRaw });
                   }
                 } catch (error) {
                   this.logger.error(['Error on upload file to minio', error?.message, error?.stack]);
@@ -5210,6 +5209,9 @@ export class BaileysStartupService extends ChannelStartupService {
 
   private prepareMessage(message: WAMessage): Message {
     const keyAny = message.key as any;
+    const deserializedMessage = this.deserializeMessageBuffers({ ...message.message });
+    const quoteContextInfo = pickQuoteContextInfo(deserializedMessage);
+
     const messageRaw: any = {
       key: {
         ...message.key,
@@ -5221,7 +5223,7 @@ export class BaileysStartupService extends ChannelStartupService {
         (message.key.fromMe
           ? 'Você'
           : message?.participant || (message.key?.participant ? message.key.participant.split('@')[0] : null)),
-      message: this.deserializeMessageBuffers({ ...message.message }),
+      message: deserializedMessage,
       messageType: getContentType(message.message),
       messageTimestamp: Long.isLong(message.messageTimestamp)
         ? message.messageTimestamp.toNumber()
@@ -5229,18 +5231,14 @@ export class BaileysStartupService extends ChannelStartupService {
       source: getDevice(keyAny.id),
       instanceId: this.instanceId,
       status: status[message.status],
-      contextInfo: this.deserializeMessageBuffers(message.message?.messageContextInfo),
+      contextInfo: this.deserializeMessageBuffers(quoteContextInfo ?? message.message?.messageContextInfo),
     };
 
     if (!messageRaw.status && message.key.fromMe === false) {
       messageRaw.status = status[3]; // DELIVERED MESSAGE
     }
 
-    if (messageRaw.message.extendedTextMessage) {
-      messageRaw.messageType = 'conversation';
-      messageRaw.message.conversation = messageRaw.message.extendedTextMessage.text;
-      delete messageRaw.message.extendedTextMessage;
-    }
+    flattenPlainExtendedText(messageRaw);
 
     if (messageRaw.message.documentWithCaptionMessage) {
       messageRaw.messageType = 'documentMessage';
